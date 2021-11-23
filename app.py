@@ -13,7 +13,7 @@ app = Flask("ISS_Classifier")
 def classify_image():
     file = request.files['image'].read()
     if file != None:
-        npimg = np.fromstring(file, np.uint8)
+        # npimg = np.fromstring(file, np.uint8)
         classifier_service = finished_classifier()
         identified_class = classifier_service.classify_image(npimg)
         return identified_class
