@@ -57,6 +57,7 @@ class finished_classifier:
     def prepare_img(self, img):
         #Make img conform to training data
         img = Image.open(img)
+        
         rezised_img = img.resize((32, 32))
 
         #Transform to legal numpy array
