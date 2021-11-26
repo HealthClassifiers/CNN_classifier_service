@@ -76,7 +76,10 @@ def addMedicalRecord():
       #  db.insert_user_data("hej")
       #  with open(file , 'rb') as f:
       #      contents = f.read()
-    db.getDb().medicalrecords.insert({'data': Binary(file.read())})
+    res = Binary(file.read())
+    encoded = base64.b64encode(res)
+    img = 'data:image/png;base64,{}'.format(encoded)
+    db.getDb().medicalrecords.insert({'data': encoded})
     
    # img = request.form['blob']
    # print(type(img))
@@ -96,12 +99,13 @@ def getMedicalRecords():
       #      contents = f.read()
     res = []
     for x in db.getDb().medicalrecords.find():
-        res.append(str(x.get('data')))
+        mystr_encoded = base64.b64decode(x.get('data'))
+        res.append(x.get('data').decode("utf-8"))
     print(res[1])
 
        # img = request.form['blob']
    # print(type(img))
-    response = make_response(jsonify(res[1]), 200)
+    response = make_response(jsonify(res[0]), 200)
     return response
 
 
