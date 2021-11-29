@@ -23,6 +23,7 @@ app.config['SECRET_KEY'] = 'secret!'
 socket = SocketIO(app, cors_allowed_origins="*" , engineio_logger=True)
 CORS(app)
 @app.route('/classify', methods=['POST'])
+@cross_origin()
 def classify_image():
     file = request.files['image']
     if file != None:
@@ -56,28 +57,40 @@ def test():
     return make_response(result, 200)
 
 @app.route('/doctor', methods=['POST'])
+@cross_origin()
 def ping():
     fileId = request.values['fileId']
 
     db = PersistanceModule()
-    file = db.getDb().medicalrecords.find_one({"_id": ObjectId(fileId)})
+    record = db.getDb().medicalrecords.find_one({"_id": ObjectId(fileId)})
 
     db = PersistanceModule()
     db.getDb().medicalrecords.find_one_and_update({"_id": ObjectId(fileId)}, {"$set":{"status":"sent to doctor"}})
 
-    socket.emit('result' , file )
+    result = {
+        'image':record.get('data').decode("utf-8"),
+        'id':str(record.get('_id')), 
+        'identified_class':record.get('identified_class'), 
+        'confidence':record.get('confidence'), 
+        'description':record.get('description'), 
+        'comment':record.get('comment'), 
+        'status':record.get('status')}
+
+    socket.emit('result' , result )
 
     return make_response("Ok", 200)
 
 @app.route('/medicalRecords', methods=['POST' ])
 @cross_origin()
 def addMedicalRecord():
+    print(request.values)
     fileId = request.values['fileId']
     comment = request.values['comment']
     status = request.values['status']
 
     db = PersistanceModule()
-    db.getDb().s.find_one_and_update({"_id": ObjectId(fileId)}, {"$set":{"comment":comment, "status":status}})
+    s = db.getDb().medicalrecords.find_one_and_update({"_id": ObjectId(fileId)}, {"$set":{"comment":comment, "status":status}})
+    print(s)
 
     return make_response("Ok", 200)
 
