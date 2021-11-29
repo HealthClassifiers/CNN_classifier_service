@@ -19,7 +19,7 @@ class PersistanceModule:
         print(img)
 
     def show_user_data(self):
-        images = self.trainingData._list_collections()
+        images = self.trainingData.database['trainingData._list_collections']
         print(images)
 
 

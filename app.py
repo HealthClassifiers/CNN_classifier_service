@@ -13,8 +13,8 @@ from io import BytesIO
 from flask_cors import CORS, cross_origin
 import base64
 from bson import Binary
+from bson.objectid import ObjectId
 error_messages = {'NO_IMAGE_PROVIDED': 'You have not provided an image in correct format to be classified.'}
-
 
 app = Flask("ISS_Classifier")
 app.config['SECRET_KEY'] = 'secret!'
@@ -27,16 +27,21 @@ def classify_image():
     file = request.files['image']
     if file != None:
         db = PersistanceModule()
-      #  db.insert_user_data("hej")
-      #  with open(file , 'rb') as f:
-      #      contents = f.read()
-        db.getDb().s.insert({'data': Binary(file.read())})
-        
+
+        fileBytes =  Binary(file.read())
 
         classifier_service = finished_classifier()
         identified_class = classifier_service.classify_image(file)
-        print(identified_class)
-        return identified_class
+
+        description = "This is a description"
+        comment = ""
+        status = "classified"
+
+        encoded = base64.b64encode(fileBytes)
+        id = db.getDb().medicalrecords.insert({'data': encoded, 'identified_class':identified_class, 'confidence':42, 'description':description, 'comment':comment, 'status':status})
+
+        result = {'id':str(id), 'identified_class':identified_class, 'confidence':42, 'description':description, 'comment':comment, 'status':status}
+        return jsonify(result)
     else:
         return error_messages(error_messages['NO_IMAGE_PROVIDED'])
 
@@ -47,68 +52,57 @@ def test():
     classifier = finished_classifier(save_on_classification=False)
     result = classifier.classify_image('./test_img.jpg')
 
-    # db.show_user_data()
-    response = make_response(result, 200)
-    response.mimetype = "test/plain"
-    return response
+    db.show_user_data()
+    return make_response(result, 200)
 
 @app.route('/doctor', methods=['POST'])
 def ping():
-    file = request.files['image']
-    img = Image.open(file)
-    img_byte_arr = BytesIO()
-    img.save(img_byte_arr, format='jpeg')
-    socket.emit('result' , img_byte_arr.getvalue() )
-    # db.show_user_data()
-    response = make_response('Ok', 200)
-    response.mimetype = "test/plain"
-    return response
+    fileId = request.values['fileId']
+
+    db = PersistanceModule()
+    file = db.getDb().medicalrecords.find_one({"_id": ObjectId(fileId)})
+
+    db = PersistanceModule()
+    db.getDb().medicalrecords.find_one_and_update({"_id": ObjectId(fileId)}, {"$set":{"status":"sent to doctor"}})
+
+    socket.emit('result' , file )
+
+    return make_response("Ok", 200)
 
 @app.route('/medicalRecords', methods=['POST' ])
 @cross_origin()
 def addMedicalRecord():
-    print('received message: ')
-    print(request.form)
-    file = request.files['blob']
-    print(file)
-    
-    db = PersistanceModule()
-      #  db.insert_user_data("hej")
-      #  with open(file , 'rb') as f:
-      #      contents = f.read()
-    res = Binary(file.read())
-    encoded = base64.b64encode(res)
-    img = 'data:image/png;base64,{}'.format(encoded)
-    db.getDb().medicalrecords.insert({'data': encoded})
-    
-   # img = request.form['blob']
-   # print(type(img))
-    response = make_response('Ok', 200)
-    response.mimetype = "test/plain"
-    return response
+    fileId = request.values['fileId']
+    comment = request.values['comment']
+    status = request.values['status']
 
+    db = PersistanceModule()
+    db.getDb().s.find_one_and_update({"_id": ObjectId(fileId)}, {"$set":{"comment":comment, "status":status}})
+
+    return make_response("Ok", 200)
 
 @app.route('/medicalRecords', methods=['GET' ])
 @cross_origin()
 def getMedicalRecords():
-   
-    
     db = PersistanceModule()
-      #  db.insert_user_data("hej")
-      #  with open(file , 'rb') as f:
-      #      contents = f.read()
+
     res = []
     for x in db.getDb().medicalrecords.find():
-        mystr_encoded = base64.b64decode(x.get('data'))
-        res.append(x.get('data').decode("utf-8"))
-    print(res[1])
-
-       # img = request.form['blob']
-   # print(type(img))
-    response = make_response(jsonify(res[0]), 200)
+        res.append({'id':str(x.get('_id')), 'identified_class':x.get('identified_class'), 'confidence':x.get('confidence'), 'description':x.get('description'), 'comment':x.get('comment'), 'status':x.get('status')})
+        
+    response = make_response(jsonify(res), 200)
     return response
 
+@app.route('/image', methods=['GET' ])
+@cross_origin()
+def getMedicalRecordImage():
+    fileId = request.values['fileId']
 
+    db = PersistanceModule()
+    file = db.getDb().medicalrecords.find_one({"_id": ObjectId(fileId)})
+
+    response = make_response(jsonify(file.get('data').decode("utf-8")), 200)
+    return response    
 
 @socket.on('message')
 def handle_message(data):
