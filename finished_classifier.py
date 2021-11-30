@@ -97,7 +97,25 @@ def test_harness():
     classifier = finished_classifier()
     # classifier.classify_image('./test_img.jpg')
     # classifier.visualize_model()
+    for c in classifier.classes:
+        # name = ''.join(c.split())
+        # filename = "./descriptions_of_classes/" + name
+        # f = open(filename, "a")
+        # f.write(c)
+        # f.write("\nBeskrivelse:\n")
+        # f.write("Symptomer: \n")
+        # f.write("Anbefalet handling: \n")
+        name = ''.join(c.split())
+        info_path = "./information_on_classes/"
+        desc_path = info_path + "description/" + name + ".txt"
+        coa_path = info_path + "recommended_course_of_action/" + name + ".txt"
+        symp_path = info_path + "symptoms/" + name + ".txt"
+        f = open(desc_path, "a")
+        open(coa_path, "a")
+        open(symp_path, "a")
+        
 
 
 if __name__ == '__main__': 
     test_harness()
+

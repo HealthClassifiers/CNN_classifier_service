@@ -8,6 +8,7 @@ import pymongo
 from werkzeug.datastructures import FileStorage
 from finished_classifier import finished_classifier
 from user_data_persistance import PersistanceModule
+from diagnosis_library import api_get_text
 from flask_socketio import SocketIO, emit
 from io import BytesIO  
 from flask_cors import CORS, cross_origin
@@ -34,14 +35,18 @@ def classify_image():
         classifier_service = finished_classifier()
         identified_class = classifier_service.classify_image(file)
 
-        description = "This is a description"
+        description, symptoms, coa = api_get_text('Acne and Rosacea')
         comment = ""
         status = "classified"
 
         encoded = base64.b64encode(fileBytes)
-        id = db.getDb().medicalrecords.insert({'data': encoded, 'identified_class':identified_class, 'confidence':42, 'description':description, 'comment':comment, 'status':status})
+        id = db.getDb().medicalrecords.insert({'data': encoded, 'identified_class':identified_class, 
+                                                'confidence':42, 'description':description, 'symptoms': symptoms, 'course_of_action': coa,
+                                                'comment':comment, 'status':status})
 
-        result = {'id':str(id), 'identified_class':identified_class, 'confidence':42, 'description':description, 'comment':comment, 'status':status}
+        result = {'id':str(id), 'identified_class':identified_class, 'confidence':42, 
+                    'description':description, 'symptoms': symptoms, 'course_of_action': coa,
+                     'comment':comment, 'status':status}
         return jsonify(result)
     else:
         return error_messages(error_messages['NO_IMAGE_PROVIDED'])
