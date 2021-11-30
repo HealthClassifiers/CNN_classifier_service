@@ -22,7 +22,7 @@ app.config['SECRET_KEY'] = 'secret!'
 
 #mongo = pymongo(app)
 socket = SocketIO(app, cors_allowed_origins="*" , engineio_logger=True)
-CORS(app)
+CORS(app , origins=['*'])
 @app.route('/classify', methods=['POST'])
 @cross_origin()
 def classify_image():
@@ -34,7 +34,6 @@ def classify_image():
 
         classifier_service = finished_classifier()
         identified_class = classifier_service.classify_image(file)
-
         description, symptoms, coa = api_get_text('Acne and Rosacea')
         comment = ""
         status = "classified"
@@ -88,14 +87,14 @@ def ping():
 @app.route('/medicalRecords', methods=['POST' ])
 @cross_origin()
 def addMedicalRecord():
-    print(request.values)
-    fileId = request.values['fileId']
-    comment = request.values['comment']
-    status = request.values['status']
+    json = request.get_json()
+    fileId = json['fileId']
+    comment = json['comment']
+    status = json['status']
 
     db = PersistanceModule()
     s = db.getDb().medicalrecords.find_one_and_update({"_id": ObjectId(fileId)}, {"$set":{"comment":comment, "status":status}})
-    print(s)
+    print('adding')
 
     return make_response("Ok", 200)
 
