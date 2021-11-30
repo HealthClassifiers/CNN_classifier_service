@@ -41,7 +41,7 @@ def classify_image():
 
         encoded = base64.b64encode(fileBytes)
         id = db.getDb().medicalrecords.insert({'data': encoded, 'identified_class':identified_class, 
-                                                'confidence':42, 'description':description, 'symptoms': symptoms, 'course_of_action': coa,
+                                                'confidence':"", 'description':description, 'symptoms': symptoms, 'course_of_action': coa,
                                                 'comment':comment, 'status':status})
 
         result = {'id':str(id), 'identified_class':identified_class, 'confidence':42, 
